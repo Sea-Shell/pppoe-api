@@ -33,4 +33,10 @@ type General struct {
 	Schemes    []string `yaml:"schemes" json:"schemes"`
 	ListenPort string   `yaml:"listen-port" json:"listen_port"`
 	LogLevel   string   `yaml:"log-level" json:"log-level"`
+	Event      Event    `yaml:"event" json:"event"`
+}
+
+// Event represents config for event
+type Event struct {
+	SearchMinimumCharacters int `yaml:"search-minimum-characters" json:"search_minimum_characters"`
 }
