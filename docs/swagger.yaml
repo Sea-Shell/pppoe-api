@@ -1,0 +1,211 @@
+definitions:
+  models.Error:
+    properties:
+      error:
+        type: string
+    type: object
+  models.EventItem:
+    properties:
+      event_created:
+        type: string
+      event_description:
+        type: string
+      event_end:
+        type: string
+      event_id:
+        type: integer
+      event_location:
+        type: string
+      event_name:
+        type: string
+      event_organizer:
+        type: string
+      event_start:
+        type: string
+    type: object
+  models.EventItemNoID:
+    properties:
+      event_created:
+        type: string
+      event_description:
+        type: string
+      event_end:
+        type: string
+      event_location:
+        type: string
+      event_name:
+        type: string
+      event_organizer:
+        type: string
+      event_start:
+        type: string
+    type: object
+  models.Health:
+    properties:
+      documentation:
+        type: string
+      name:
+        type: string
+      status:
+        type: string
+      updated:
+        type: string
+    type: object
+  models.ResponsePayload:
+    properties:
+      current_page:
+        type: integer
+      item_limit:
+        type: integer
+      items: {}
+      next_page:
+        type: string
+      prev_page:
+        type: string
+      total_item_count:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  models.Status:
+    properties:
+      status:
+        type: string
+    type: object
+info:
+  contact:
+    email: support@sea-shell.no
+    name: API Support
+  description: This is the API of PPPoE
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: PPPoE API
+  version: "1.0"
+paths:
+  /event/{event}/get:
+    get:
+      consumes:
+      - application/json
+      description: Get event spessific to ID
+      parameters:
+      - description: Unique ID of event you want to get
+        in: path
+        name: event
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: desc
+          schema:
+            $ref: '#/definitions/models.EventItem'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/models.Error'
+      summary: Get event with ID
+      tags:
+      - Event
+  /event/insert:
+    put:
+      consumes:
+      - application/json
+      description: Insert new event with corresponding values
+      parameters:
+      - description: query params
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.EventItemNoID'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 'status: success when all goes well'
+          schema:
+            $ref: '#/definitions/models.Status'
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - OAuth2Application:
+        - write
+      summary: Insert new event
+      tags:
+      - Event
+  /event/list:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of event items
+      parameters:
+      - default: event name
+        description: name search for event
+        in: query
+        name: name
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 30
+        description: Number of items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/models.ResponsePayload'
+            - properties:
+                items:
+                  items:
+                    $ref: '#/definitions/models.EventItem'
+                  type: array
+              type: object
+        default:
+          description: ""
+          schema:
+            $ref: '#/definitions/models.Error'
+      summary: List events
+      tags:
+      - Event
+  /health:
+    get:
+      consumes:
+      - application/json
+      description: Get health status of application
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: desc
+          schema:
+            $ref: '#/definitions/models.Health'
+      summary: Get application health
+      tags:
+      - Health
+securityDefinitions:
+  APIKey:
+    in: header
+    name: X-API-Key
+    type: apiKey
+  OAuth2Application:
+    description: OAuth protects our entity endpoints
+    flow: password
+    scopes:
+      admin: Grants read and write access to administrative information
+      read: Grants read access
+      write: Grants read and write access
+    tokenUrl: https://oauth2.googleapis.com/token
+    type: oauth2
+swagger: "2.0"

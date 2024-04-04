@@ -6,14 +6,18 @@ import (
 	"flag"
 	"log"
 
-	utils "github.com/SeaShell/gogear-api/pkg/utils"
+	utils "github.com/Sea-Shell/gogear-api/pkg/utils"
+	endpoints "github.com/bateau84/pppoe-api/pkg/api"
+	docs "github.com/bateau84/pppoe-api/pkg/docs"
 	models "github.com/bateau84/pppoe-api/pkg/models"
 
+	requestid "github.com/gin-contrib/requestid"
 	gin "github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
+
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"github.com/swaggo/swag/example/basic/docs"
+
 	zap "go.uber.org/zap"
 	zapcore "go.uber.org/zap/zapcore"
 )
@@ -46,7 +50,7 @@ func makeLogger(loglevel zapcore.Level) *zap.SugaredLogger {
 	return zap.Must(cfg.Build()).Sugar()
 }
 
-func LogRequestsMiddleware(logger *zap.SugaredLogger) gin.HandlerFunc {
+func logRequestsMiddleware(logger *zap.SugaredLogger) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Log the request details
 		logger.Infow("Received request",
@@ -77,25 +81,24 @@ func configMiddleware(config *models.General) gin.HandlerFunc {
 	}
 }
 
-// @title           GoGear API
-// @version         1.0
-// @description     This is the API of GoGear
-// @contact.name    API Support
-// @contact.email   support@seashell.no
-// @license.name    Apache 2.0
-// @license.url     http://www.apache.org/licenses/LICENSE-2.0.html
-//
-// @securityDefinitions.apikey APIKey
-// @in header
-// @name X-API-Key
-//
-// @securitydefinitions.oauth2.password OAuth2Application
-// @description OAuth protects our entity endpoints
-// @tokenUrl https://oauth2.googleapis.com/token
-// @authorizationurl https://accounts.google.com/o/oauth2/auth
-// @scope.write Grants read and write access
-// @scope.admin Grants read and write access to administrative information
-// @scope.read Grants read access
+//	@title			PPPoE API
+//	@version		1.0
+//	@description	This is the API of PPPoE
+//	@contact.name	API Support
+//	@contact.email	support@sea-shell.no
+//	@license.name	Apache 2.0
+//	@license.url	http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @securityDefinitions.apikey				APIKey
+// @in										header
+// @name									X-API-Key
+// @securitydefinitions.oauth2.password	OAuth2Application
+// @description							OAuth protects our entity endpoints
+// @tokenUrl								https://oauth2.googleapis.com/token
+// @authorizationurl						https://accounts.google.com/o/oauth2/auth
+// @scope.write							Grants read and write access
+// @scope.admin							Grants read and write access to administrative information
+// @scope.read								Grants read access
 func main() {
 	configFile := flag.String("config", configFile, "Config file")
 
@@ -126,30 +129,31 @@ func main() {
 	docs.SwaggerInfo.Schemes = config.General.Schemes
 	docs.SwaggerInfo.BasePath = "/api/v1"
 
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	router.Use(gin.Recovery())
 
-	router.Use(LogRequestsMiddleware(log))
+	router.Use(logRequestsMiddleware(log))
 	router.Use(databaseMiddleware(db))
 	router.Use(configMiddleware(&config.General))
+	router.Use(requestid.New())
 
 	// API v1
 	swagger := router.Group("/swagger")
 	v1 := router.Group("/api/v1")
 
 	// API Groups
-	dogGroup := v1.Group("/dog")
-	// dogVoteGroup := v1.Group("/vote")
+	events := v1.Group("/event")
 
 	// The routes
-	router.GET("/health", endpoints.ReturnHealth)
+	v1.GET("/health", endpoints.ReturnHealth)
 
-	// Hotdog endpoints
-	dogGroup.GET("/list", endpoints.ListDog)
-	dogGroup.GET("/:dog/get", endpoints.GetDog)
-	dogGroup.POST("/:dog/update", endpoints.UpdateDog)
-	dogGroup.DELETE("/:dog/delete", endpoints.DeleteDog)
-	dogGroup.PUT("/insert", endpoints.InsertDog)
+	// Event endpoints
+	events.GET("/list", endpoints.ListEvents)
+	events.GET("/:event/get", endpoints.GetEvent)
+	// events.POST("/:gear/update", endpoints.UpdateEvent)
+	// events.DELETE("/:gear/delete", endpoints.DeleteEvent)
+	events.PUT("/insert", endpoints.InsertEvent)
 
 	// Swagger API documentation
 	swagger.GET("/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
